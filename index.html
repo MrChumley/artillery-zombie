@@ -897,8 +897,8 @@ function pkMsg(seat,tt){ const P='\uD83C\uDF83'; if(tt==='trick') return seatS(s
 /* pking2: Pumpkin King theme 'fanfare, stop, hit' (approved theme-c, C minor, ~2.9 s). Haunted pipe organ (sines x0.5/1/2/3/4), slow gentle
    2.5 Hz +-12% tremulant, small generated reverb, church bell on the final chord. Original melody: C4 G4 F#4 G4 Ab4 over Cm/Fm, stop,
    Bdim7 stab, stop, higher Bdim7 stab, stop, big C-minor chord + bell. Same audio()/audioOK() gating as the old jingle; one live copy
-   (a replay or reset fades the old one out); stops on reset and when the tab is hidden. Level matches the old jingle (-37.3 LUFS, g 0.3126). */
-const PK2_G=0.3126, PK2_LEN=3.0, PK2_PIPES=[[0.5,0.9],[1,0.75],[2,0.3],[3,0.14],[4,0.07]];
+   (a replay or reset fades the old one out); stops on reset and when the tab is hidden. pking3: raised x3.02 to the Wilhelm/Scraps level (-27.7 LUFS mono, -24.7 stereo; true peak -10.6 dBTP, no limiter needed; was g 0.3126). */
+const PK2_G=0.9441, PK2_LEN=3.0, PK2_PIPES=[[0.5,0.9],[1,0.75],[2,0.3],[3,0.14],[4,0.07]];
 const pk2N=m=>440*Math.pow(2,(m-69)/12);
 function pk2Env(a,t0,pts,g){ const v=a.createGain(); v.gain.setValueAtTime(0,t0); for(const [t,x] of pts) v.gain.linearRampToValueAtTime(x*g,t0+t); return v; }
 function pk2Osc(a,src,type,t0,dur,f){ const o=a.createOscillator(); o.type=type; o.frequency.setValueAtTime(f,t0); o.start(t0); o.stop(t0+dur+0.03); src.push(o); return o; }
