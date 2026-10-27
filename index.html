@@ -215,7 +215,7 @@ function s2Fire(){ /* fire(): same transform on host and guest, only the host/lo
   windShow(); }
 function armS2Cheat(k,fromNet){ if(!tanks||!S2_CHEATS[k]) return; const nm=S2_CHEATS[k]; if(netRole==='guest'){ if(!fromNet && conn && conn.open) send({type:'s2Cheat',k}); msg.textContent=nm+' cheat armed'; return; }
   pkCheat=0; tkCheat=0; scCheat=0; trCheat=''; snowCheat=0; s2Cheat=k; msg.textContent=nm+' cheat armed'; }
-function s2Reset(){ s2Cheat=''; rainLeft=0; rainHaze=0; mudShot=false; leafLeft=0; leafDue=0; leafTop=null; leafBot=null; leafLayT0=0; leafHaze=0; fwPending=[false,false]; fwSub=[]; trees=[]; scraps=null; scrFx=null; scrStop(0.05); prt=null; ptFx=null; ptHit=null; ptStop(0.05); s2SndStop(0.25); }
+function s2Reset(){ s2Cheat=''; rainLeft=0; rainHaze=0; mudShot=false; leafLeft=0; leafDue=0; leafTop=null; leafBot=null; leafLayT0=0; leafHaze=0; fwPending=[false,false]; fwSub=[]; trees=[]; scraps=null; scrFx=null; scrStop(0.05); prt=null; ptFx=null; ptHit=null; ptStop(0.05); pkStop(0.05); s2SndStop(0.25); }
 function treeSnap(){ return trees.map(t=>({x:t.x,born:t.born,hp:t.hp})); }
 function treesFrom(a){ if(!Array.isArray(a)) return; trees=a.filter(t=>t&&Number.isFinite(Number(t.x))).slice(0,2).map(t=>({x:Math.round(Number(t.x)),born:Number(t.born)|0,hp:clamp(Number(t.hp)|0,0,TREE_HP)})).filter(t=>t.hp>0); }
 function s2State(){ return {rainLeft,leafLeft,leafDue,fwPending:fwPending.slice(),trees:treeSnap(),scr:scrSnap(),prt:ptState()}; }
@@ -701,7 +701,7 @@ function s2Shot(render,vol,jobFn){ const O={data:null,j:null,buf:null,n:0,played
 const fwPopSnd=s2Shot(null,FWPOP_VOL,fwPopJob), sqSnd=s2Shot(sqRender,SQ_VOL,null);
 function sfxFwPop(){ try{ fwPopSnd.play(); }catch(e){} }
 function sfxSammy(){ try{ sqSnd.play(); }catch(e){} }
-function s2SndSync(){ try{ rainSnd.sync(); leafSnd.sync(); if(!s2Ok()){ if(fwPopSnd.live.length) fwPopSnd.stop(0.1); if(sqSnd.live.length) sqSnd.stop(0.1); if(scrV) scrStop(0.1); if(ptV.length) ptStop(0.1); } }catch(e){} }
+function s2SndSync(){ try{ rainSnd.sync(); leafSnd.sync(); if(!s2Ok()){ if(fwPopSnd.live.length) fwPopSnd.stop(0.1); if(sqSnd.live.length) sqSnd.stop(0.1); if(scrV) scrStop(0.1); if(ptV.length) ptStop(0.1); } if(pkV && document.hidden) pkStop(0.1); }catch(e){} }
 function s2SndStop(f){ try{ rainSnd.stop(f); leafSnd.stop(f); fwPopSnd.stop(f); sqSnd.stop(f); }catch(e){} }
 window.__rainLoop=rainSnd.api; window.__leafLoop=leafSnd.api; window.__fwPop=fwPopSnd.api; window.__sqChuck=sqSnd.api; window.__s2Snd={ sync:()=>s2SndSync(), stop:f=>s2SndStop(f) };
 document.addEventListener('visibilitychange',()=>{ try{ s2SndSync(); }catch(e){} });
@@ -894,10 +894,41 @@ function armPumpkinCheat(fromNet){ if(!tanks) return; if(netRole==='guest'){ if(
 function pkTrickTreat(seat){ const v=1-seat, canTrick=(tanks[v].lives||1)>=2, canTreat=(tanks[seat].lives||1)<5; let tt=Math.random()<0.5?'trick':'treat';
   if(tt==='trick'&&!canTrick) tt=canTreat?'treat':'none'; else if(tt==='treat'&&!canTreat) tt=canTrick?'trick':'none'; return tt; }
 function pkMsg(seat,tt){ const P='\uD83C\uDF83'; if(tt==='trick') return seatS(seat)+' '+P+' TRICK! '+seatS(1-seat)+' -1 life'; if(tt==='treat') return seatS(seat)+' '+P+' TREAT! +1 life'; return seatS(seat)+' '+P+' spooky... no effect'; }
-let pkJingleN=0;
-function sfxPking(){ pkJingleN++; try{ /* spooky minor jingle: E G Bb (diminished) then a sliding ghost 'oooo', low drone under it */
-  tone(330,0.17,'triangle',0.06,0); tone(392,0.17,'triangle',0.06,0.17); tone(466,0.17,'triangle',0.06,0.34); tone(440,0.55,'triangle',0.06,0.51,262);
-  tone(523,0.7,'sine',0.035,0.2,392); tone(110,1.0,'square',0.02,0,98); tone(165,0.3,'triangle',0.04,0.85,82); noise(0.3,0.03,0.6); }catch(e){} }
+/* pking2: Pumpkin King theme 'fanfare, stop, hit' (approved theme-c, C minor, ~2.9 s). Haunted pipe organ (sines x0.5/1/2/3/4), slow gentle
+   2.5 Hz +-12% tremulant, small generated reverb, church bell on the final chord. Original melody: C4 G4 F#4 G4 Ab4 over Cm/Fm, stop,
+   Bdim7 stab, stop, higher Bdim7 stab, stop, big C-minor chord + bell. Same audio()/audioOK() gating as the old jingle; one live copy
+   (a replay or reset fades the old one out); stops on reset and when the tab is hidden. Level matches the old jingle (-37.3 LUFS, g 0.3126). */
+const PK2_G=0.3126, PK2_LEN=3.0, PK2_PIPES=[[0.5,0.9],[1,0.75],[2,0.3],[3,0.14],[4,0.07]];
+const pk2N=m=>440*Math.pow(2,(m-69)/12);
+function pk2Env(a,t0,pts,g){ const v=a.createGain(); v.gain.setValueAtTime(0,t0); for(const [t,x] of pts) v.gain.linearRampToValueAtTime(x*g,t0+t); return v; }
+function pk2Osc(a,src,type,t0,dur,f){ const o=a.createOscillator(); o.type=type; o.frequency.setValueAtTime(f,t0); o.start(t0); o.stop(t0+dur+0.03); src.push(o); return o; }
+function pk2Organ(a,src,org,t0,st,d,m,gg,env){ for(const n of [].concat(m)){ const f=pk2N(n), v=pk2Env(a,t0+st,env||[[0.018,1],[Math.max(0.03,d-0.05),0.85],[d,0]],gg); v.connect(org);
+  for(const [r,pg] of PK2_PIPES){ const o=pk2Osc(a,src,'sine',t0+st,d,f*r), pv=a.createGain(); pv.gain.value=pg; o.connect(pv); pv.connect(v); } } }
+function pk2Bell(a,src,dest,t0,f0,dur,g){ for(const [r,gg,dd] of [[0.5,0.55,1],[1,1,0.8],[1.19,0.5,0.6],[1.5,0.35,0.5],[2,0.45,0.45],[2.51,0.2,0.3],[2.99,0.15,0.25],[4.1,0.08,0.18]]){
+  const o=pk2Osc(a,src,'sine',t0,dur*dd,f0*r), v=a.createGain(); o.frequency.value=f0*r; v.gain.setValueAtTime(0,t0); v.gain.linearRampToValueAtTime(gg*g,t0+0.006); v.gain.exponentialRampToValueAtTime(0.0008*g+1e-6,t0+dur*dd); o.connect(v); v.connect(dest); } }
+function pk2Verb(a,dest,sec,wet,seed){ const n=Math.ceil(a.sampleRate*sec), b=a.createBuffer(2,n,a.sampleRate);
+  for(let c=0;c<2;c++){ const d=b.getChannelData(c); let s=seed+c*31; for(let i=0;i<n;i++){ s=(s*1103515245+12345)&0x7fffffff; d[i]=(s/0x3fffffff-1)*Math.pow(1-i/n,3); } }
+  const cv=a.createConvolver(); cv.buffer=b; const inp=a.createGain(), wg=a.createGain(), lp=a.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2600; wg.gain.value=wet;
+  inp.connect(dest); inp.connect(cv); cv.connect(lp); lp.connect(wg); wg.connect(dest); return inp; }
+function pk2Theme(a,dest,t0,g){ const src=[], out=a.createGain(); out.gain.value=g; out.connect(dest); const rv=pk2Verb(a,out,1.2,0.5,233);
+  const trem=a.createGain(); trem.gain.value=1; const l=a.createOscillator(), lg=a.createGain(); l.frequency.value=2.5; lg.gain.setValueAtTime(0,t0); lg.gain.linearRampToValueAtTime(0.12,t0+0.25); l.connect(lg); lg.connect(trem.gain); l.start(t0); l.stop(t0+3.03); src.push(l);
+  const org=a.createBiquadFilter(); org.type='lowpass'; org.Q.value=0.5; org.frequency.value=2000; org.connect(trem); trem.connect(rv);
+  const O=(st,d,m,gg,env)=>pk2Organ(a,src,org,t0,st,d,m,gg,env), HELD=[[0.015,1],[0.28,0.9],[0.32,0]], STAB=[[0.008,1],[0.12,0.8],[0.16,0]];
+  O(0,0.16,60,0.04); O(0.17,0.30,67,0.04); O(0.48,0.09,66,0.035); O(0.58,0.09,67,0.035); O(0.68,0.32,68,0.042,HELD);   /* C4 G4 F#4 G4 Ab4 */
+  O(0,0.47,[36,48,51,55],0.022); O(0.68,0.32,[41,53,56,60],0.022,HELD);                                              /* Cm, Fm */
+  O(1.20,0.16,[47,50,53,56,71],0.028,STAB); O(1.52,0.16,[50,53,56,59,74],0.028,STAB);                                 /* stop, Bdim7 stab, stop, higher stab, stop */
+  O(1.84,0.85,[36,48,55,60,63,67,72],0.03,[[0.012,1],[0.25,0.8],[0.7,0.55],[0.85,0]]);                               /* C minor hit */
+  pk2Bell(a,src,rv,t0+1.84,261.6,1.1,0.045);
+  const d=pk2Osc(a,src,'triangle',t0+1.84,0.35,98), dv=a.createGain(); d.frequency.exponentialRampToValueAtTime(49,t0+2.19); dv.gain.setValueAtTime(0.05,t0+1.84); dv.gain.exponentialRampToValueAtTime(0.001,t0+2.19); d.connect(dv); dv.connect(rv);
+  return {out,src}; }
+var pkJingleN=0, pkPlayed=0, pkV=null;
+function pkStop(f){ const v=pkV; pkV=null; if(!v) return; try{ const t=v.a.currentTime, fd=f||0.05; v.bus.gain.cancelScheduledValues(t); v.bus.gain.setValueAtTime(v.bus.gain.value,t); v.bus.gain.linearRampToValueAtTime(0,t+fd);
+  v.src.forEach(x=>{ try{ x.stop(t+fd+0.02); }catch(e){} }); setTimeout(()=>{ try{ v.bus.disconnect(); }catch(e){} },Math.round((fd+0.2)*1000)); }catch(e){} }
+function sfxPking(){ pkJingleN++; try{ const a=audio(); if(!a||!audioOK(a)) return; pkStop(0.08);
+  const bus=a.createGain(); bus.gain.value=1; bus.connect(a.destination); const t0=a.currentTime+0.02, th=pk2Theme(a,bus,t0,PK2_G), v={a,bus,src:th.src};
+  pkV=v; pkPlayed++; setTimeout(()=>{ if(pkV===v){ pkV=null; try{ bus.disconnect(); }catch(e){} } },Math.round((PK2_LEN+0.4)*1000)); }catch(e){ pkV=null; } }
+window.__pkSnd={ count:()=>pkJingleN, played:()=>pkPlayed, live:()=>pkV?1:0, gain:PK2_G, len:PK2_LEN, stop:f=>pkStop(f),
+  render:async(sr)=>{ sr=sr||44100; const o=new OfflineAudioContext(1,Math.ceil(sr*3.3),sr); pk2Theme(o,o.destination,0.02,PK2_G); const b=await o.startRendering(); return b.getChannelData(0); } };
 const PKI={o:'#ff8a1e',d:'#b24e00',y:'#ffe45c',k:'#ffd23a'};
 const PKG=['.k..kk..k.','.kkkkkkkk.','.oodoodoo.','oyydoodyyo','ooydoodyoo','ooodyydooo','oyyyyyyyyo','ooyoyyoyoo','.oooooooo.','..oooooo..'];
 function drawPkIcon(px,py){ const x=Math.round(px), y=Math.round(py); const L=x-7, T=y-17; ctx.save(); ctx.fillStyle='#000'; ctx.fillRect(L,T,14,14); ctx.globalAlpha=0.16; ctx.fillStyle=PKI.o; ctx.fillRect(L+1,T+1,12,12); ctx.globalAlpha=1; ctx.strokeStyle=PKI.o; ctx.lineWidth=1; ctx.strokeRect(L+0.5,T+0.5,13,13);
