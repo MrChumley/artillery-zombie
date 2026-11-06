@@ -413,7 +413,7 @@ function s2Net(data){ if(data.type==='s2Cheat'){ if(netRole==='host') armS2Cheat
      it would land, screeches (warble-a: 3 shrieks, 0.25s, 0.40s apart, gain 0.0774 = Wilhelm loudness), carries it for SCR_CARRY ms and lets go
      above a random x the host picked (sent once in 'scrPlan', so host and guest agree), at least 40px from the protected tank (54px for a boomer).
      It falls straight down (no wind) and explodes with its normal effect and damage - it may hit the shooter, a tree, a tower or a box.
-     One catch, then he flies away. He also leaves after SCR_TURNS (3) enemy turns with no catch.
+     One catch, then he flies away. He also leaves after SCR_TURNS (5) enemy turns with no catch.
    SPECIAL SHELLS: caught = normal, muddy, boomer (still a boomer), roller (judged at its first ground touch; dropped straight it bounces in place), dirt
      (mound at the drop spot), Sagittarius arrow, Gemini twin/ghost (each is its own shell; one catch total). Ignored = heart shots (they heal),
      fireworks (they split in 3), rainbow/turtle-run shots, ARTZILLA, the protected player's own shells, roflcopter boxes and bombs, weather,
@@ -422,7 +422,7 @@ function s2Net(data){ if(data.type==='s2Cheat'){ if(netRole==='host') armS2Cheat
    STALE CLIENTS: an old guest ignores 'scrPlan'/'scr': it sees its shell land where it was aimed, then the host's result snaps the explosion to the
      drop spot (terrain/lives/turn synced as always). It draws the box as a heart and the claim as the default zodiac animation (no damage), as with
      Sammy. An old host never drops Scraps and ignores a guest's 'scraps' cheat. */
-const SCR_TURNS=3, SCR_R=20, SCR_RB=30, SCR_SAFE=40, SCR_LEAD=14, SCR_SWOOP=28, SCR_CARRY=1500, SCR_LEAVE=1500, SCR_SNAG=22, SCR_G=0.0774;
+const SCR_TURNS=5, SCR_R=20, SCR_RB=30, SCR_SAFE=40, SCR_LEAD=14, SCR_SWOOP=28, SCR_CARRY=1500, SCR_LEAVE=1500, SCR_SNAG=22, SCR_G=0.0774;
 const SCR_MSG='Scraps is on watch!', SCR_GRAB='Scraps snatched the shell!', SCR_GONE='Scraps flew off';
 const SCRP={b:'#6e5442',d:'#47362a',w:'#b8a890',r:'#efe7d6',h:'#e07b6c',k:'#f0dca0',e:'#111111',f:'#d8b080'};
 const SCR_PERCH=['......hh....','.....hhhe...','.....hhhkk..','....rrrr.k..','..rrbbbbr...','.bbbbbbbbb..','bbddbbbbbb..','bdwwdbbbbb..','bdwwddbbb...','.wwddddbb...','ww..dddd....','.....f.f....'];
@@ -526,7 +526,7 @@ window.__scrSnd={ count:()=>scrN, played:()=>scrPlayed, live:()=>scrV?1:0, gain:
    zodiac table 11 -> 12). Cheat 'portal' arms it for the next roflcopter.
    Claim: the box pops and two flat rings iris open (0.6s): RED floats ~30px above whatever is under the claiming shot's hit point (slides up to 12px off a
    tank; keeps >= 6px clear of ground, tanks, trees, towers and boxes; never above y=40, the roflcopter line), BLUE floats at max height (scatter2: y = 37, just under the roflcopter band
-   y 16-28 incl. a box at release) at a random x in 26..294 (host-picked; keeps >= 10px clear, else the nearest clear x). The claim ends the turn; the pair stays for 4 turns (every endTurn counts,
+   y 16-28 incl. a box at release) at a random x in 26..294 (host-picked; keeps >= 10px clear, else the nearest clear x). The claim ends the turn; the pair stays for 5 turns (every endTurn counts,
    both players; rainbow runs do not), dims to 60% on its last turn and closes with a 0.4s shrink. A second claim replaces the pair.
    Jump: a shell crossing a ring's plane within its 12px half-width comes out of the other ring at the same offset, 1px past its plane, with the SAME
    velocity (speed and direction kept). Max 2 jumps per shell; after a jump both rings are ignored until the shell is 14px from the exit centre.
@@ -537,8 +537,8 @@ window.__scrSnd={ count:()=>scrN, played:()=>scrPlayed, live:()=>scrV?1:0, gain:
    live pair in s2State().prt. Old guests ignore it (they replay the straight path and snap to the host's result).
    Seizure-safe: glow breathes at 0.5 Hz (70-100%), 6 dots orbit at 0.25 Hz, no flashes; reduced motion = static rings, no iris / shrink.
    Sound: open = approved 'portalB-open' vwoorp (gain 0.0629), pass = approved 'portalA-pass' fwip at entry + fwop 0.16s later (gain 0.0568). */
-const PT_TURNS=4, PT_MAX=2, PT_CLR=14, PT_R=12, PT_RY=3, PT_UP=30, PT_RC=6, PT_BC=10, PT_CEIL=40, PT_NUDGE=30, PT_BM=26, PT_BY=37, PT_SLIDE=12,
-  PT_IRIS=[0.25,0.65], PT_SHUT=400, PT_COL={r:['#f0283c','#ffb3bb'],b:['#2fa8ff','#c4e8ff']}, PT_MSG='Portals open for 4 turns', PT_NONE='Portals fizzled',
+const PT_TURNS=5, PT_MAX=2, PT_CLR=14, PT_R=12, PT_RY=3, PT_UP=30, PT_RC=6, PT_BC=10, PT_CEIL=40, PT_NUDGE=30, PT_BM=26, PT_BY=37, PT_SLIDE=12,
+  PT_IRIS=[0.25,0.65], PT_SHUT=400, PT_COL={r:['#f0283c','#ffb3bb'],b:['#2fa8ff','#c4e8ff']}, PT_MSG='Portals open for 5 turns', PT_NONE='Portals fizzled',
   PT_G_OPEN=0.0629, PT_G_PASS=0.0568, PT_GAP=0.16, PT_OPEN_LEN=0.72, PT_PASS_LEN=0.48, PT_DUR=1500;
 function ptTop(x){ /* highest obstacle (smallest y) under a ring centred at x */ const a=Math.max(0,Math.round(x-PT_R)), b=Math.min(W-1,Math.round(x+PT_R)); let top=H;
   for(let i=a;i<=b;i++) top=Math.min(top,walkY(i));
@@ -848,7 +848,7 @@ const SIGN_PERKS={
   QH:{ id:'pking', icon:'\uD83C\uDF83', name:'PUMPKIN KING', uses:1, dur:3000, label:'halloween: Jack the Pumpkin King climbs out of the box, strides to the other tank and plays trick-or-treat' },
  QG:{ id:'tom', icon:'\uD83E\uDD83', name:'TOM THE TURKEY', uses:1, dur:3200, label:'november (tomsanta1): Tom the Turkey waddles out of the box and snaps a wishbone between the tanks; the big half wins +1 life' },
   QY:{ id:'sammy', icon:'\uD83D\uDC3F\uFE0F', name:'SAMMY THE SQUIRREL', uses:1, dur:3000, label:'seasons2 drop: Sammy pops out of his birdhouse, scampers toward the other tank and plants an acorn that grows into a shield tree over 3 turns', noHit:true },
- QL:{ id:'portal', icon:'\uD83C\uDF00', name:'PORTALS OPEN', uses:1, dur:1500, label:'portal1 drop: a red ring over the claiming shot and a blue ring high in the middle; shells that go in one come out the other for 4 turns', noHit:true },
+ QL:{ id:'portal', icon:'\uD83C\uDF00', name:'PORTALS OPEN', uses:1, dur:1500, label:'portal1 drop: a red ring over the claiming shot and a blue ring high in the middle; shells that go in one come out the other for 5 turns', noHit:true },
  QK:{ id:'scraps', icon:'\uD83E\uDD85', name:'SCRAPS THE VULTURE', uses:1, dur:2600, label:'scraps1 drop: Scraps flies to a dead snag by the claimer; he catches the next enemy shell that would land near that tank and drops it somewhere else', noHit:true },
  QC:{ id:'santa', icon:'\uD83C\uDF85', name:'SANTA', uses:1, dur:4600, label:'december (tomsanta1): the sleigh crosses the sky; nice = a present with a random powerup for the shooter, naughty = coal -1 life for the opponent (never the last life)' } };
 /* zodiac-drops (replaces the flag-tied sign button; flags are cosmetic). Each sign is a roflcopter care package 'z'+code.
